@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JustFocus — focus</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sds-1: #244f5c;
+    --sds-2: #405391;
+    --sds-3: #4c7bb8;
+    --sds-4: #8b8cd0;
+    --sds-5: #d7d3e4;
+
+    --ink: #21333a;
+    --paper: #faf9f5;
+    --paper-deep: #f1eee6;
+    --line: rgba(36, 79, 92, 0.14);
+    --muted: #8a9893;
+
+    --focus-grad: radial-gradient(130% 150% at 22% 0%, #4c7bb8 0%, #405391 58%, #244f5c 100%);
+    --break-grad: radial-gradient(130% 150% at 22% 0%, #d7d3e4 0%, #8b8cd0 60%, #405391 100%);
+
+    --sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+    --serif: "Instrument Serif", Georgia, serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: var(--sans);
+    background:
+      radial-gradient(90% 70% at 50% -10%, rgba(139, 140, 208, 0.16), transparent 60%),
+      linear-gradient(180deg, var(--paper) 0%, var(--paper-deep) 100%);
+    color: var(--ink);
+    min-height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    transition: background 0.5s ease;
+  }
+
+  body.mode-break {
+    background:
+      radial-gradient(90% 70% at 50% -10%, rgba(139, 140, 208, 0.24), transparent 60%),
+      linear-gradient(180deg, #f4f0f8 0%, #eae4f0 100%);
+  }
+
+  ::selection { background: var(--sds-5); }
+
+  button { font-family: inherit; }
+
+  /* ---------- Header ---------- */
+  header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 24px 44px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .wordmark { display: flex; align-items: baseline; gap: 6px; }
+  .wordmark .just { font-weight: 800; letter-spacing: -0.03em; font-size: 21px; }
+  .wordmark .focus { font-family: var(--serif); font-style: italic; font-size: 27px; color: var(--sds-2); }
+
+  .modeline {
+    display: flex;
+    gap: 20px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .modeline b { color: var(--sds-3); font-weight: 800; }
+
+  /* ---------- Main ---------- */
+  main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 44px 24px 36px;
+  }
+
+  .card { width: min(540px, 100%); display: flex; flex-direction: column; align-items: center; }
+
+  /* Task name */
+  .task-field { width: 100%; text-align: center; margin-bottom: 26px; }
+
+  #taskInput {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 2px dashed transparent;
+    outline: none;
+    text-align: center;
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 23px;
+    color: var(--ink);
+    padding: 8px 12px;
+    transition: border-color 0.2s ease, color 0.2s ease;
+  }
+  #taskInput::placeholder { color: #adb9b8; }
+  #taskInput:hover, #taskInput:focus { border-bottom-color: var(--sds-4); }
+
+  .task-field.done #taskInput { color: var(--muted); text-decoration: line-through; font-style: normal; }
+
+  .task-done-tick {
+    display: none;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--sds-3);
+    margin-top: 8px;
+  }
+  .task-field.done .task-done-tick { display: block; }
+
+  /* Mode pill */
+  .mode-pill {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 10.5px;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--sds-3);
+    background: color-mix(in srgb, var(--sds-5) 45%, transparent);
+    padding: 7px 16px;
+    border-radius: 999px;
+    margin-bottom: 30px;
+    transition: background 0.4s ease, color 0.4s ease;
+  }
+  .mode-pill .tilde { font-family: var(--serif); font-style: italic; font-weight: 400; text-transform: none; letter-spacing: 0; font-size: 15px; }
+  body.mode-break .mode-pill { color: var(--sds-2); background: color-mix(in srgb, var(--sds-4) 22%, transparent); }
+
+  /* Ring */
+  .ring-wrap { position: relative; width: 300px; height: 300px; }
+
+  .ring-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+
+  .ring-deco { fill: none; stroke: color-mix(in srgb, var(--sds-4) 38%, transparent); stroke-width: 1.5; stroke-dasharray: 2 10; stroke-linecap: round; }
+
+  .ring-track { fill: none; stroke: color-mix(in srgb, var(--sds-5) 58%, transparent); stroke-width: 8; }
+
+  .ring-progress {
+    fill: none;
+    stroke: url(#progressGrad);
+    stroke-width: 8;
+    stroke-linecap: round;
+    stroke-dasharray: 754;
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 1s linear;
+  }
+
+  .ring-wrap.running { animation: breathe 3.2s ease-in-out infinite; }
+  @keyframes breathe {
+    0%, 100% { filter: drop-shadow(0 0 0 rgba(139,140,208,0)); }
+    50% { filter: drop-shadow(0 0 26px rgba(139,140,208,0.38)); }
+  }
+  body.mode-break .ring-wrap.running { animation-name: breatheBreak; }
+  @keyframes breatheBreak {
+    0%, 100% { filter: drop-shadow(0 0 0 rgba(64,83,145,0)); }
+    50% { filter: drop-shadow(0 0 26px rgba(139,140,208,0.5)); }
+  }
+
+  .time-display {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    pointer-events: none;
+  }
+
+  #timeText {
+    font-weight: 260;
+    font-size: 76px;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+
+  #ringLabel { font-size: 10.5px; font-weight: 700; letter-spacing: 0.24em; text-transform: uppercase; color: var(--muted); }
+
+  /* Controls */
+  .controls { display: flex; align-items: center; gap: 18px; margin-top: 28px; }
+
+  .btn { border: none; cursor: pointer; font-weight: 700; transition: transform 0.12s ease, opacity 0.2s ease, background 0.2s ease, color 0.2s ease, border-color 0.2s ease; }
+  .btn:active { transform: scale(0.95); }
+
+  .btn-icon {
+    width: 92px; height: 92px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--focus-grad);
+    color: #fdfdff;
+    font-size: 24px;
+    box-shadow: 0 18px 36px -12px rgba(36, 79, 92, 0.6), inset 0 1px 0 rgba(255,255,255,0.28);
+  }
+  .btn-icon:hover { transform: translateY(-2px) scale(1.02); }
+  .btn-icon:active { transform: translateY(0) scale(0.96); }
+
+  body.mode-break .btn-icon { background: var(--break-grad); box-shadow: 0 18px 36px -12px rgba(64, 83, 145, 0.55), inset 0 1px 0 rgba(255,255,255,0.3); }
+
+  .btn-ghost {
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: transparent;
+    color: var(--sds-3);
+    font-size: 17px;
+    border: 1.5px solid var(--line);
+  }
+  .btn-ghost:hover { background: color-mix(in srgb, var(--sds-5) 55%, transparent); border-color: var(--sds-4); color: var(--sds-2); }
+  .btn-ghost[disabled] { opacity: 0.3; pointer-events: none; }
+
+  /* Presets */
+  .presets {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 5px;
+    margin-top: 30px;
+    background: color-mix(in srgb, var(--sds-5) 35%, transparent);
+    padding: 6px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+  }
+  .preset {
+    border: none;
+    background: transparent;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--muted);
+    padding: 7px 16px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .preset:hover { color: var(--ink); }
+  .preset.active { background: var(--ink); color: #fdfdff; box-shadow: 0 6px 14px -6px rgba(33,51,58,0.5); }
+  .preset-custom {
+    font-style: italic;
+    font-family: var(--serif);
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: 0.01em;
+  }
+
+  /* Custom duration */
+  .custom-time {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 12px;
+    padding: 6px 6px 6px 18px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: #ffffff;
+    box-shadow: 0 10px 24px -14px rgba(33, 51, 58, 0.4);
+  }
+  .custom-time[hidden] { display: none; }
+
+  #customInput {
+    width: 62px;
+    border: none;
+    outline: none;
+    background: transparent;
+    text-align: center;
+    font-family: var(--serif);
+    font-size: 22px;
+    color: var(--ink);
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+  #customInput::-webkit-outer-spin-button,
+  #customInput::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  #customInput::placeholder { color: #adb9b8; }
+
+  .custom-unit { font-size: 10px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); margin-right: 8px; }
+
+  .btn-set {
+    border: none;
+    border-radius: 999px;
+    padding: 9px 18px;
+    background: var(--ink);
+    color: #fdfdff;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.12s ease;
+  }
+  .btn-set:hover { background: var(--sds-1); }
+  .btn-set:active { transform: scale(0.95); }
+
+  /* Shortcut hints (tappable, so they work without a keyboard) */
+  .hints {
+    margin-top: 28px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px 6px;
+    font-size: 11px;
+  }
+  .hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 9px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--sans);
+    font-size: 11px;
+    cursor: pointer;
+    transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.12s ease;
+  }
+  .hint:hover { background: #ffffff; border-color: var(--line); color: var(--ink); }
+  .hint:active { transform: scale(0.96); }
+  .hint[disabled] { opacity: 0.32; pointer-events: none; }
+  .hint kbd {
+    display: inline-block;
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 700;
+    border: 1px solid var(--line);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    padding: 2px 6px;
+    background: #ffffff;
+    color: var(--ink);
+  }
+  .hint:hover kbd { border-color: var(--sds-4); }
+
+  /* no hover on touch: make the hints read as real buttons */
+  @media (hover: none) {
+    .hint { border-color: var(--line); background: #ffffff; color: var(--ink); }
+    .hint kbd { border-color: var(--sds-5); }
+  }
+
+  /* ---------- Footer ---------- */
+  footer {
+    border-top: 1px solid var(--line);
+    padding: 26px 44px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .stats { display: flex; gap: 40px; }
+
+  .stat { display: flex; flex-direction: column; gap: 3px; min-width: 60px; }
+  .stat .num { font-family: var(--serif); font-size: 28px; line-height: 1; color: var(--sds-2); }
+  .stat .num .unit { font-family: var(--sans); font-size: 0.42em; font-weight: 600; color: var(--muted); letter-spacing: 0.02em; }
+  .stat .k { font-size: 9.5px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+
+  .foot-note { font-size: 11.5px; color: var(--muted); letter-spacing: 0.02em; }
+
+  /* ---------- Toast ---------- */
+  #toast {
+    position: fixed;
+    bottom: 118px;
+    left: 50%;
+    transform: translateX(-50%) translateY(16px);
+    background: var(--ink);
+    color: #fdfdff;
+    font-size: 12.5px;
+    font-weight: 600;
+    padding: 12px 22px;
+    border-radius: 999px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    z-index: 50;
+    box-shadow: 0 18px 38px -14px rgba(33, 51, 58, 0.55);
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+
+  @media (max-width: 600px) {
+    header, footer { padding: 16px 20px; }
+    main { padding: 24px 20px 20px; }
+    footer { padding: 18px 20px; }
+    .modeline { display: none; }
+    .ring-wrap { width: 224px; height: 224px; }
+    #timeText { font-size: 56px; }
+    .stats { gap: 24px; }
+    .task-field { margin-bottom: 16px; }
+    #taskInput { font-size: 20px; }
+    .mode-pill { margin-bottom: 20px; }
+    .controls { margin-top: 18px; }
+    .btn-icon { width: 78px; height: 78px; font-size: 21px; }
+    .presets, .custom-time, .hints { margin-top: 18px; }
+    .preset { padding: 7px 13px; }
+    /* larger tap targets now that the hints are buttons */
+    .hint { padding: 8px 10px; }
+    #customInput { font-size: 26px; }
+    .btn-set { padding: 11px 20px; }
+    .stat .num { font-size: 24px; }
+    /* dock the toast over the footer note so it never covers the controls */
+    #toast { bottom: 12px; font-size: 12px; padding: 10px 18px; }
+  }
+
+  /* short phones: shrink the ring so the stats stay close to the fold */
+  @media (max-width: 600px) and (max-height: 740px) {
+    .ring-wrap { width: 186px; height: 186px; }
+    #timeText { font-size: 46px; }
+    .btn-icon { width: 68px; height: 68px; font-size: 19px; }
+    .btn-ghost { width: 40px; height: 40px; font-size: 15px; }
+    .task-field { margin-bottom: 10px; }
+    .mode-pill { margin-bottom: 14px; }
+    .presets, .custom-time, .hints { margin-top: 14px; }
+    .hints { gap: 3px 2px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wordmark"><span class="just">Just</span><span class="focus">Focus</span></div>
+  <div class="modeline">
+    <span>Mode&nbsp;<b id="modeReadout">Focus</b></span>
+    <span>Day&nbsp;<b id="dayReadout">&mdash;</b></span>
+  </div>
+</header>
+
+<main>
+  <div class="card">
+    <div class="task-field" id="taskField">
+      <input id="taskInput" type="text" placeholder="what are you focusing on?" autocomplete="off" spellcheck="false" maxlength="80">
+      <div class="task-done-tick">task complete &middot; press T to undo</div>
+    </div>
+
+    <div class="mode-pill"><span class="tilde">&tilde;</span><span id="modePillText">focus session</span></div>
+
+    <div class="ring-wrap" id="ringWrap">
+      <svg viewBox="0 0 260 260" aria-hidden="true">
+        <defs>
+          <linearGradient id="progressGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#8b8cd0"/>
+            <stop offset="100%" stop-color="#244f5c"/>
+          </linearGradient>
+        </defs>
+        <circle class="ring-deco" cx="130" cy="130" r="117"></circle>
+        <circle class="ring-track" cx="130" cy="130" r="120" stroke-width="8"></circle>
+        <circle class="ring-progress" id="ringProgress" cx="130" cy="130" r="120" stroke-width="8"></circle>
+      </svg>
+      <div class="time-display">
+        <div id="timeText">25:00</div>
+        <div id="ringLabel">ready</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn btn-ghost" id="btnReset" title="Reset (R)" aria-label="Reset timer">&#10227;</button>
+      <button class="btn btn-icon" id="btnToggle" title="Start · Space" aria-label="Start timer">&#9654;</button>
+      <button class="btn btn-ghost" id="btnSkip" title="Skip (S)" aria-label="Skip to next phase" disabled>&#10095;&#10095;</button>
+    </div>
+
+    <div class="presets" role="group" aria-label="Focus duration">
+      <button class="preset active" data-min="25">25</button>
+      <button class="preset" data-min="45">45</button>
+      <button class="preset" data-min="60">60</button>
+      <button class="preset" data-min="90">90</button>
+      <button class="preset preset-custom" id="presetCustom" aria-expanded="false">custom</button>
+    </div>
+
+    <div class="custom-time" id="customTime" hidden>
+      <input id="customInput" type="number" inputmode="numeric" min="1" max="240" step="1" value="25" aria-label="Custom focus minutes">
+      <span class="custom-unit">min</span>
+      <button class="btn-set" id="customSet">set</button>
+    </div>
+
+    <div class="hints">
+      <button class="hint" data-action="toggle"><kbd>Space</kbd><span>start / pause</span></button>
+      <button class="hint" id="hintReset" data-action="reset"><kbd>R</kbd><span>reset</span></button>
+      <button class="hint" id="hintSkip" data-action="skip"><kbd>S</kbd><span>skip</span></button>
+      <button class="hint" data-action="task"><kbd>T</kbd><span>task done</span></button>
+      <button class="hint" data-action="break"><kbd>B</kbd><span>5 min break</span></button>
+      <button class="hint" data-action="duration"><kbd>1&ndash;4</kbd><span>duration</span></button>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="stats" id="stats"></div>
+  <div class="foot-note" id="emptyNote"></div>
+</footer>
+
+<div id="toast" role="status"></div>
+
+<script>
+(() => {
+  "use strict";
+
+  const FOCUS_DEFAULT = 25 * 60;
+  const BREAK = 5 * 60;
+  const PRESET_MINS = [25, 45, 60, 90];
+  const CUSTOM_MIN = 1;
+  const CUSTOM_MAX = 240;
+  const STORAGE_KEY = "justfocus_stats";
+  const TASK_KEY = "justfocus_task";
+  const PREF_KEY = "justfocus_pref";
+  const RING_C = 2 * Math.PI * 120;
+
+  // ---- State ----
+  let seconds = FOCUS_DEFAULT;
+  let total = FOCUS_DEFAULT;
+  let focusLength = FOCUS_DEFAULT;
+  let running = false;
+  let inBreak = false;
+  let ticker = null;
+  let day = null;
+
+  // ---- Elements ----
+  const $ = (id) => document.getElementById(id);
+  const timeText = $("timeText");
+  const ringLabel = $("ringLabel");
+  const ringWrap = $("ringWrap");
+  const ringProg = $("ringProgress");
+  const btnToggle = $("btnToggle");
+  const btnReset = $("btnReset");
+  const btnSkip = $("btnSkip");
+  const modePillText = $("modePillText");
+  const modeReadout = $("modeReadout");
+  const dayReadout = $("dayReadout");
+  const taskInput = $("taskInput");
+  const taskField = $("taskField");
+  const statsEl = $("stats");
+  const emptyNote = $("emptyNote");
+  const toast = $("toast");
+  const presetButtons = Array.from(document.querySelectorAll(".preset[data-min]"));
+  const presetCustom = $("presetCustom");
+  const customTime = $("customTime");
+  const customInput = $("customInput");
+  const customSet = $("customSet");
+  const hintReset = $("hintReset");
+  const hintSkip = $("hintSkip");
+  const hintButtons = Array.from(document.querySelectorAll(".hint"));
+
+  // ---- Helpers ----
+  const fmt = (sec) => {
+    const m = Math.floor(sec / 60);
+    const s = Math.max(0, sec % 60);
+    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  };
+
+  const todayStr = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+
+  const load = (key, fallback) => {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    } catch (e) { return fallback; }
+  };
+  const save = (key, val) => {
+    try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
+  };
+
+  const statsFor = (d) => (load(STORAGE_KEY, {})[d] || { focus: 0, breaks: 0, sessions: 0 });
+  const record = (d, patch) => {
+    const all = load(STORAGE_KEY, {});
+    if (!all[d]) all[d] = { focus: 0, breaks: 0, sessions: 0 };
+    if (patch.focus) all[d].focus += patch.focus;
+    if (patch.breaks) all[d].breaks += patch.breaks;
+    if (patch.sessions) all[d].sessions += patch.sessions;
+    save(STORAGE_KEY, all);
+    renderStats();
+  };
+
+  // ---- Rendering ----
+  function fmtFocus(sec) {
+    const m = Math.round(sec / 60);
+    if (m === 0) return "0";
+    const h = Math.floor(m / 60);
+    const rem = m % 60;
+    if (h === 0) return `${m}<span class="unit">min</span>`;
+    if (rem === 0) return `${h}<span class="unit">hr</span>`;
+    return `${h}<span class="unit">hr</span> ${rem}<span class="unit">min</span>`;
+  }
+
+  function renderStats() {
+    const du = statsFor(day);
+    const breakMins = Math.round(du.breaks / 60);
+    statsEl.innerHTML = `
+      <div class="stat"><span class="num">${fmtFocus(du.focus)}</span><span class="k">focus</span></div>
+      <div class="stat"><span class="num">${du.sessions}</span><span class="k">${du.sessions === 1 ? "session" : "sessions"}</span></div>
+      <div class="stat"><span class="num">${breakMins}</span><span class="k">break min</span></div>
+    `;
+    emptyNote.textContent = (du.focus + du.breaks + du.sessions) === 0
+      ? "Nothing yet today — start the timer."
+      : "Kept in your browser, resets daily.";
+  }
+
+  function updateRing() {
+    const ratio = total > 0 ? seconds / total : 0;
+    ringProg.style.strokeDashoffset = RING_C * (1 - ratio);
+  }
+
+  function setLabel() {
+    if (inBreak) { ringLabel.textContent = "break"; return; }
+    if (running) { ringLabel.textContent = "focus"; return; }
+    ringLabel.textContent = (seconds === total) ? "ready" : "paused";
+  }
+
+  function refreshControls() {
+    const idle = !running && seconds === total;
+    // an idle break can still be ended early
+    btnSkip.disabled = idle && !inBreak;
+    btnReset.disabled = idle;
+    hintSkip.disabled = idle && !inBreak;
+    hintReset.disabled = idle;
+    btnToggle.setAttribute("aria-label", running ? "Pause timer" : "Start timer");
+    btnToggle.title = running ? "Pause · Space" : "Start · Space";
+    btnToggle.innerHTML = running ? "&#10073;&#10073;" : "&#9654;";
+    ringWrap.classList.toggle("running", running);
+  }
+
+  function updateTitle() {
+    document.title = `${fmt(inBreak ? Math.max(0, seconds) : seconds)} · ${inBreak ? "Break" : "Focus"} — JustFocus`;
+  }
+
+  // ---- Mode switching ----
+  // autoStart keeps the flow moving when a session ends naturally;
+  // user-triggered mode changes stay paused (optional breaks).
+  function switchMode(mode, autoStart = false) {
+    stop();
+    inBreak = mode === "break";
+    total = inBreak ? BREAK : focusLength;
+    seconds = total;
+    document.body.classList.toggle("mode-break", inBreak);
+    modePillText.textContent = inBreak ? "short break" : "focus session";
+    modeReadout.textContent = inBreak ? "Break" : "Focus";
+    timeText.textContent = fmt(seconds);
+    ringLabel.textContent = inBreak ? "break" : "ready";
+    syncPreset();
+    refreshControls();
+    updateRing();
+    updateTitle();
+    if (autoStart) start();
+  }
+
+  // ---- Timer engine ----
+  function tick() {
+    seconds -= 1;
+    timeText.textContent = fmt(seconds);
+    updateTitle();
+    updateRing();
+    if (seconds <= 0) {
+      if (inBreak) {
+        record(day, { breaks: total });
+        chime(false);
+        showToast("Break over — back to it");
+        switchMode("focus");
+      } else {
+        record(day, { focus: total, sessions: 1 });
+        chime(true);
+        showToast("Focus complete — break started");
+        switchMode("break", true);
+      }
+    }
+  }
+
+  function start() {
+    if (running) return;
+    if (seconds <= 0) { seconds = total; timeText.textContent = fmt(seconds); updateRing(); }
+    running = true;
+    ticker = setInterval(tick, 1000);
+    setLabel();
+    refreshControls();
+    updateTitle();
+  }
+
+  function stop() {
+    running = false;
+    clearInterval(ticker);
+    ticker = null;
+  }
+
+  function pause() {
+    stop();
+    setLabel();
+    refreshControls();
+    updateTitle();
+  }
+
+  function reset() {
+    stop();
+    seconds = total;
+    timeText.textContent = fmt(seconds);
+    setLabel();
+    refreshControls();
+    updateRing();
+    updateTitle();
+    showToast(`Reset to ${total / 60} min`);
+  }
+
+  function skip() {
+    const elapsed = Math.max(0, total - seconds);
+    if (inBreak) {
+      if (elapsed > 0) record(day, { breaks: elapsed });
+      showToast("Break skipped");
+      switchMode("focus");
+    } else {
+      if (elapsed > 0) record(day, { focus: elapsed, sessions: 1 });
+      showToast("Session skipped");
+      switchMode("break");
+    }
+  }
+
+  // ---- Presets ----
+  function syncPreset() {
+    if (inBreak) {
+      presetButtons.forEach((b) => b.classList.remove("active"));
+      presetCustom.classList.remove("active");
+      presetCustom.textContent = "custom";
+      return;
+    }
+    const min = Math.round(total / 60);
+    let matched = false;
+    presetButtons.forEach((b) => {
+      const on = Number(b.dataset.min) === min;
+      b.classList.toggle("active", on);
+      if (on) matched = true;
+    });
+    // no preset matches, so the custom chip carries the value
+    presetCustom.classList.toggle("active", !matched);
+    presetCustom.textContent = matched ? "custom" : String(min);
+    presetCustom.setAttribute("aria-label", matched ? "Custom duration" : `Custom duration, ${min} minutes`);
+  }
+
+  function applyPreset(min) {
+    if (inBreak) return;
+    stop();
+    focusLength = min * 60;
+    total = focusLength;
+    seconds = total;
+    timeText.textContent = fmt(seconds);
+    ringLabel.textContent = "ready";
+    syncPreset();
+    refreshControls();
+    updateRing();
+    updateTitle();
+    save(PREF_KEY, min * 60);
+  }
+
+  presetButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      if (running) { showToast("Pause before changing duration"); return; }
+      applyPreset(Number(btn.dataset.min));
+    });
+  });
+
+  // ---- Custom duration ----
+  function closeCustom() {
+    customTime.hidden = true;
+    presetCustom.setAttribute("aria-expanded", "false");
+  }
+
+  function openCustom() {
+    if (inBreak) { showToast("Duration is set in focus mode"); return; }
+    if (running) { showToast("Pause before changing duration"); return; }
+    customInput.value = Math.round(focusLength / 60);
+    customTime.hidden = false;
+    presetCustom.setAttribute("aria-expanded", "true");
+    customInput.focus();
+    customInput.select();
+  }
+
+  function commitCustom() {
+    const n = Math.round(Number(customInput.value));
+    if (!Number.isFinite(n) || n < CUSTOM_MIN || n > CUSTOM_MAX) {
+      showToast(`Enter ${CUSTOM_MIN}–${CUSTOM_MAX} minutes`);
+      customInput.focus();
+      customInput.select();
+      return;
+    }
+    applyPreset(n);
+    closeCustom();
+    showToast(`Set to ${n} min`);
+  }
+
+  presetCustom.addEventListener("click", () => {
+    if (customTime.hidden) openCustom();
+    else closeCustom();
+  });
+  customSet.addEventListener("click", commitCustom);
+  customInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); commitCustom(); }
+    else if (e.key === "Escape") { e.preventDefault(); closeCustom(); taskInput.focus(); }
+  });
+  document.addEventListener("click", (e) => {
+    if (customTime.hidden) return;
+    if (customTime.contains(e.target) || presetCustom.contains(e.target)) return;
+    closeCustom();
+  });
+
+  function cyclePreset() {
+    if (inBreak) { showToast("Duration is set in focus mode"); return; }
+    if (running) { showToast("Pause before changing duration"); return; }
+    const i = PRESET_MINS.indexOf(Math.round(focusLength / 60));
+    applyPreset(PRESET_MINS[(i + 1) % PRESET_MINS.length]);
+  }
+
+  // ---- Task ----
+  function isTaskDone() { return taskField.classList.contains("done"); }
+
+  function setTaskDone(done) {
+    taskField.classList.toggle("done", done);
+    taskInput.disabled = done;
+    save(TASK_KEY, { name: taskInput.value.trim(), done });
+  }
+
+  function loadTask() {
+    const t = load(TASK_KEY, null);
+    if (!t) return;
+    if (t.name) taskInput.value = t.name;
+    if (t.done) setTaskDone(true);
+  }
+
+  taskInput.addEventListener("input", () => {
+    if (isTaskDone()) return;
+    save(TASK_KEY, { name: taskInput.value.trim(), done: false });
+  });
+
+  // ---- Audio ----
+  let audioCtx = null;
+  function chime(win) {
+    try {
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const now = audioCtx.currentTime;
+      const notes = win ? [659.25, 880] : [554.37, 440];
+      notes.forEach((freq, i) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = freq;
+        const t = now + i * 0.16;
+        gain.gain.setValueAtTime(0.0001, t);
+        gain.gain.exponentialRampToValueAtTime(0.14, t + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(t);
+        osc.stop(t + 0.55);
+      });
+    } catch (e) { /* audio unavailable */ }
+  }
+
+  // ---- Toast ----
+  let toastTimer = null;
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove("show"), 2600);
+  }
+
+  // ---- Buttons ----
+  btnToggle.addEventListener("click", () => (running ? pause() : start()));
+  btnReset.addEventListener("click", reset);
+  btnSkip.addEventListener("click", () => { if (!(seconds === total && !running && !inBreak)) skip(); });
+
+  // ---- Actions (shared by keyboard and the tappable hints) ----
+  function runAction(action) {
+    switch (action) {
+      case "toggle":
+        running ? pause() : start();
+        break;
+      case "reset":
+        reset();
+        break;
+      case "skip":
+        if (running || seconds !== total || inBreak) skip();
+        break;
+      case "task":
+        if (isTaskDone()) { setTaskDone(false); showToast("Task reopened"); }
+        else if (taskInput.value.trim()) { setTaskDone(true); showToast("Task marked done"); }
+        else showToast("Type a task name first");
+        break;
+      case "break":
+        if (inBreak) { showToast("Already on a break"); break; }
+        if (running) record(day, { focus: Math.max(0, total - seconds), sessions: 1 });
+        showToast("5-minute break");
+        switchMode("break");
+        break;
+      case "duration":
+        cyclePreset();
+        break;
+    }
+  }
+
+  hintButtons.forEach((btn) => {
+    btn.addEventListener("click", () => runAction(btn.dataset.action));
+  });
+
+  const KEY_ACTIONS = { " ": "toggle", spacebar: "toggle", r: "reset", s: "skip", t: "task", b: "break" };
+
+  document.addEventListener("keydown", (e) => {
+    if (e.target === taskInput || e.target === customInput) {
+      if (e.key === "Escape" || e.key === "Enter") { e.target.blur(); e.preventDefault(); }
+      return;
+    }
+
+    // a focused button already handles Space/Enter natively; don't double-fire
+    const onButton = e.target instanceof Element && e.target.closest("button");
+    if (onButton && (e.key === " " || e.key === "Enter")) return;
+
+    if (e.key >= "1" && e.key <= "4") {
+      if (!running) applyPreset(PRESET_MINS[Number(e.key) - 1]);
+      return;
+    }
+
+    const action = KEY_ACTIONS[e.key.toLowerCase()];
+    if (!action) return;
+    e.preventDefault();
+    runAction(action);
+  });
+
+  // ---- Init ----
+  function initDay() {
+    const d = todayStr();
+    if (day !== d) {
+      day = d;
+      const all = load(STORAGE_KEY, {});
+      if (!all[d]) { all[d] = { focus: 0, breaks: 0, sessions: 0 }; save(STORAGE_KEY, all); }
+    }
+    dayReadout.textContent = new Date().toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  }
+
+  initDay();
+
+  const savedMinutes = load(PREF_KEY, FOCUS_DEFAULT);
+  applyPreset(Math.round(savedMinutes / 60) || 25);
+
+  loadTask();
+  renderStats();
+  refreshControls();
+  setLabel();
+  updateTitle();
+
+  setInterval(() => {
+    if (todayStr() !== day) {
+      initDay();
+      renderStats();
+    }
+  }, 30000);
+})();
+</script>
+</body>
+</html>
